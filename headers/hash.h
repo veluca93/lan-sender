@@ -3,16 +3,16 @@
 #include <stdint.h>
 
 typedef struct __attribute__ ((__packed__)) sha224 {
-    uint8_t hash[28];
+    uint32_t hash[7];
 } sha224_t;
 
-typedef struct __attribute__ ((__packed__)) bshift {
-    uint8_t hash[4];
-} bshift_t;
+typedef struct __attribute__ ((__packed__)) rollh {
+    uint32_t hash;
+} rollh_t;
 
 typedef struct __attribute__ ((__packed__)) hash {
+    rollh_t weak_hash;
     sha224_t strong_hash;
-    bshift_t weak_hash;
 } hash_t;
 
 #endif
