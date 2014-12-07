@@ -4,11 +4,15 @@ CFLAGS=-Os -Wall -flto -static
 LDFLAGS=-Wl,--as-needed -Wl,-O1
 
 HEADERS=$(wildcard headers/*.h)
+SOURCES=$(wildcard src/*.c)
+OBJECTS=$(SOURCES:.c=.o)
 
-all: hashtable
+all: ${OBJECTS}
 
 src/%.o: src/%.c ${HEADERS}
 	${GCC} -c ${INCLUDES} ${CFLAGS} $< -o $@
 
-hashtable: src/hashtable.o
-	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
+#hashtable: src/hashtable.o
+#	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
+
+
