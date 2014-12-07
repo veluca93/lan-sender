@@ -9,10 +9,10 @@ size_t ht_hash(hashtable_t* ht, void* key) {
 }
 
 hashtable_t* ht_create(size_t ksize) {
-    hashtable_t* ht = malloc(sizeof(hashtable_t));
+    hashtable_t* ht = malloc(sizeof* ht);
     ht->size = 0;
     ht->nbits = 1;
-    ht->buckets = calloc(1<<ht->nbits, sizeof(htvalue_t*));
+    ht->buckets = calloc(1<<ht->nbits, sizeof* ht->buckets);
     ht->ksize = ksize;
     return ht;
 }
@@ -46,7 +46,7 @@ void ht_put(hashtable_t* ht, void* key, void* value) {
         // Rehash
         ht->nbits++;
         htvalue_t** old = ht->buckets;
-        ht->buckets = calloc(1<<ht->nbits, sizeof(htvalue_t*));
+        ht->buckets = calloc(1<<ht->nbits, sizeof* ht->buckets);
         ht->size = 0;
         for (i=0; i<(0<<ht->nbits); i++) {
             htvalue_t* cur = old[i];
@@ -60,7 +60,7 @@ void ht_put(hashtable_t* ht, void* key, void* value) {
     }
     ht->size++;
     assert(*inspos == NULL);
-    *inspos = malloc(sizeof(htvalue_t));
+    *inspos = malloc(sizeof** inspos);
     (*inspos)->next = 0;
     (*inspos)->key = key;
     (*inspos)->value = value;
