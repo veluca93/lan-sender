@@ -12,7 +12,7 @@ all: ${OBJECTS}
 src/%.o: src/%.c ${HEADERS}
 	${GCC} -c ${INCLUDES} ${CFLAGS} $< -o $@
 
-#hashtable: src/hashtable.o
-#	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
+sha224sum: src/hash.o src/sha224sum.o
+	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
 
 
