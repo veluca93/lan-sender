@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     int i;
     sha224_t hash;
     sha224_ctx_t* ctx = sha224_init();
-    uint8_t buff[1024];
+    uint8_t buff[4096];
     size_t rsize = 0;
     int fd;
     if (argc != 2) {
@@ -25,13 +25,13 @@ int main(int argc, char** argv) {
     }
     do {
         errno = 0;
-        rsize = read(fd, buff, 1024);
+        rsize = read(fd, buff, sizeof buff);
         if (errno) {
             fprintf(stderr, "Error reading %s: %s\n", argv[1], strerror(errno));
             return 3;
         }
         sha224_update(ctx, buff, rsize);
-    } while(rsize==1024);
+    } while(rsize==sizeof buff);
     sha224_finalize(&hash, ctx);
     for (i=0; i<28; i++) printf("%02x", hash.hash[i]);
     printf(" %s\n", argv[1]);
