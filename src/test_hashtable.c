@@ -16,8 +16,8 @@ void yeah(long long key) {
 }
 
 int main() {
-    hashtable = ht_create(sizeof(long long));
-    for (long long i=0; i<LLONG_MAX; i=i*2+1) {
+    hashtable = ht_create(sizeof(long long), sizeof(long long));
+    for (long long i=0; i<INT_MAX; i=i*2+1) {
         long long ii = i*i;
         ht_put(hashtable, &ii, &i);
     }
