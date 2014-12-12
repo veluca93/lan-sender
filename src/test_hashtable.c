@@ -11,7 +11,7 @@ void nope(long long key) {
 void yeah(long long key) {
     htvalue_t* entry = ht_get(hashtable, &key);
     assert(entry != NULL);
-    long long value = (long long) entry->value;
+    long long value = *(long long*) entry->value;
     assert(value * value == key);
 }
 
