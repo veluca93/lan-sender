@@ -215,5 +215,3 @@ void hash_finalize(hash_t* hash, hash_ctx_t* ctx) {
     sha224_finalize(&hash->strong_hash, ctx->scontext);
     free(ctx);
 }
-
-
