@@ -5,7 +5,7 @@
 hashtable_t* hashtable;
 
 void nope(long long key) {
-    assert(ht_get(hashtable, &key) != NULL);
+    assert(ht_get(hashtable, &key) == NULL);
 }
 
 void yeah(long long key) {
@@ -17,17 +17,17 @@ void yeah(long long key) {
 
 int main() {
     hashtable = ht_create(sizeof(long long), sizeof(long long));
-    for (long long i=0; i<INT_MAX; i=i*2+1) {
+    for (long long i=0; i<INT_MAX; i+=123456) {
         long long ii = i*i;
         ht_put(hashtable, &ii, &i);
     }
 
     nope(1234567890987654321LL);
-    yeah(1206364825614169LL);
-    nope(21734908741114320LL);
-    yeah(21734908741114321LL);
-    nope(21734908741114322LL);
-    yeah(2173490882957090449LL);
+    yeah(5959549932544475136LL);
+    nope(2323148376507826175LL);
+    yeah(2323148376507826176LL);
+    nope(2323148376507826177LL);
+    yeah(1766907561692565504LL);
 
     return 0;
 }
