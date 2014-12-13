@@ -1,14 +1,17 @@
 #include "hashtable.h"
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 
 hashtable_t* hashtable;
 
 void nope(long long key) {
+    printf("Testing if %lld is missing...\n", key);
     assert(ht_get(hashtable, &key) == NULL);
 }
 
 void yeah(long long key) {
+    printf("Testing if %lld is present...\n", key);
     htvalue_t* entry = ht_get(hashtable, &key);
     assert(entry != NULL);
     long long value = *(long long*) entry->value;
@@ -28,6 +31,5 @@ int main() {
     yeah(2323148376507826176LL);
     nope(2323148376507826177LL);
     yeah(1766907561692565504LL);
-
     return 0;
 }

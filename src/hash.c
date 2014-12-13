@@ -1,6 +1,7 @@
 #include "hash.h"
 #include <string.h>
 #define _GNU_SOURCE
+#define __USE_MISC
 #include <endian.h>
 #include <stdio.h>
 
