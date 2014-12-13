@@ -5,31 +5,29 @@
 
 hashtable_t* hashtable;
 
-void nope(long long key) {
-    printf("Testing if %lld is missing...\n", key);
-    assert(ht_get(hashtable, &key) == NULL);
-}
-
-void yeah(long long key) {
-    printf("Testing if %lld is present...\n", key);
-    htvalue_t* entry = ht_get(hashtable, &key);
-    assert(entry != NULL);
-    long long value = *(long long*) entry->value;
-    assert(value * value == key);
-}
+unsigned long long* keys;
+unsigned long long* values;
 
 int main() {
-    hashtable = ht_create(sizeof(long long), sizeof(long long));
-    for (long long i=0; i<INT_MAX; i+=123456) {
-        long long ii = i*i;
-        ht_put(hashtable, &ii, &i);
+    const size_t num = 1000000;
+    keys = malloc(num*sizeof* keys);
+    values = malloc(num*sizeof* values);
+    hashtable = ht_create(sizeof(unsigned long long), sizeof(unsigned long long));
+    keys[0] = 1;
+    values[0] = 123;
+    for (size_t i=1; i<num; i++) {
+        keys[i] = keys[i-1] * 22695477;
+        values[i] = values[i-1] * 22695477; 
     }
 
-    nope(1234567890987654321LL);
-    yeah(4609178922992025600LL);
-    nope(2323148376507826175LL);
-    yeah(2323148376507826176LL);
-    nope(2323148376507826177LL);
-    yeah(1766907561692565504LL);
+    for (size_t i=0; i<num; i++)
+        ht_put(hashtable, &keys[i], &values[i]);
+
+    for (size_t i=0; i<num; i++) {
+        htvalue_t* e = ht_get(hashtable, &keys[i]);
+        assert(e);
+        assert(*(unsigned long long*) e->value == values[i]);
+    }
+
     return 0;
 }

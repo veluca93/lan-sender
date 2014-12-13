@@ -11,13 +11,10 @@ size_t ht_hash(hashtable_t* ht, void* key) {
 }
 
 hashtable_t* ht_create(size_t ksize, size_t vsize) {
-    size_t i;
     hashtable_t* ht = malloc(sizeof* ht);
     ht->size = 0;
     ht->nbits = 1;
-    ht->buckets = malloc(1<<ht->nbits * sizeof* ht->buckets);
-    for (i=0; i<(1<<ht->nbits); i++)
-        ht->buckets[i] = calloc(1, sizeof** ht->buckets);
+    ht->buckets = calloc(1<<ht->nbits, sizeof* ht->buckets);
     ht->ksize = ksize;
     ht->vsize = vsize;
     return ht;
@@ -28,62 +25,52 @@ void ht_free(hashtable_t* ht) {
     free(ht);
 }
 
-size_t ht_find(hashtable_t* ht, void* key, size_t* pos) {
+size_t ht_find(hashtable_t* ht, void* key) {
     size_t bucket = ht_hash(ht, key);
-    htvalue_t* bkt = ht->buckets[bucket];
-    *pos = 0;
-    while (bkt[*pos].key && memcmp(bkt[*pos].key, key, ht->ksize)) {
-        (*pos)++;
+    while (ht->buckets[bucket].key && memcmp(ht->buckets[bucket].key, key, ht->ksize)) {
+        bucket++;
+        if (bucket == 1<<ht->nbits) bucket = 0; 
     }
     return bucket;
 }
 
 htvalue_t* ht_get(hashtable_t* ht, void* key) {
-    size_t pos;
-    size_t bucket = ht_find(ht, key, &pos);
-    return ht->buckets[bucket][pos].key ? &ht->buckets[bucket][pos] : NULL;
+    size_t bucket = ht_find(ht, key);
+    return ht->buckets[bucket].key ? &ht->buckets[bucket] : NULL;
 }
 
 void ht_put_(hashtable_t* ht, void* key, void* value, uint8_t become_owner) {
     size_t i;
-    size_t pos;
-    size_t bucket = ht_find(ht, key, &pos);
-    if (ht->buckets[bucket][pos].key) {
-        ht->buckets[bucket][pos].value = value;
+    size_t bucket = ht_find(ht, key);
+    if (ht->buckets[bucket].key) {
+        ht->buckets[bucket].value = value;
         return;
     }
     if (ht->size * INV_MAX_LOAD_FACTOR > 1<<ht->nbits) {
         // Rehash
         ht->nbits++;
-        htvalue_t** old = ht->buckets;
-        ht->buckets = malloc((1<<ht->nbits) * (sizeof* ht->buckets));
-        for (i=0; i<(1<<ht->nbits); i++)
-            ht->buckets[i] = calloc(1, sizeof** ht->buckets);
-        ht->size = 0;
+        ht->buckets = realloc(ht->buckets, (1<<ht->nbits) * (sizeof* ht->buckets));
+        for (i=(1<<(ht->nbits-1)); i<(1<<ht->nbits); i++)
+            ht->buckets[i].key = NULL;
         for (i=0; i<(1<<(ht->nbits-1)); i++) {
-            htvalue_t* cur;
-            for (cur = old[i]; cur->key; cur++)
-                ht_put_(ht, cur->key, cur->value, 1);
-            free(old[i]);
+            if (!ht->buckets[i].key) continue;
+            size_t npos = ht_find(ht, ht->buckets[i].key);
+            if (npos == i) continue;
+            ht->buckets[npos].key = ht->buckets[i].key;
+            ht->buckets[npos].value = ht->buckets[i].value;
+            ht->buckets[i].key = NULL;
         }
-        free(old);
-        bucket = ht_find(ht, key, &pos);
+        bucket = ht_find(ht, key);
     }
     ht->size++;
-    assert(ht->buckets[bucket][pos].key == NULL);
-    size_t test = 1;
-    while (test < pos+1) test <<= 1;
-    if (pos+1 == test) {
-        ht->buckets[bucket] = realloc(ht->buckets[bucket], (sizeof** ht->buckets) * (pos*2+2));
-    }
+    assert(ht->buckets[bucket].key == NULL);
     if (become_owner) {
-        ht->buckets[bucket][pos].key = key;
-        ht->buckets[bucket][pos].value = value;
+        ht->buckets[bucket].key = key;
+        ht->buckets[bucket].value = value;
     } else {
-        ht->buckets[bucket][pos].key = memcpy(malloc(ht->ksize), key, ht->ksize);
-        ht->buckets[bucket][pos].value = memcpy(malloc(ht->vsize), value, ht->vsize);
+        ht->buckets[bucket].key = memcpy(malloc(ht->ksize), key, ht->ksize);
+        ht->buckets[bucket].value = memcpy(malloc(ht->vsize), value, ht->vsize);
     }
-    ht->buckets[bucket][pos+1].key = NULL;
 }
 
 void ht_put(hashtable_t* ht, void* key, void* value) {

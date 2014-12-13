@@ -2,7 +2,7 @@
 #define LS_HASHTABLE_H
 
 #include <stdlib.h>
-#define INV_MAX_LOAD_FACTOR 2
+#define INV_MAX_LOAD_FACTOR 4
 
 /* An hash table that uses the leftmost bits of the memory
  * representation of the key as an hash. This similar to
@@ -19,7 +19,7 @@ typedef struct ht {
     size_t nbits;
     size_t ksize;
     size_t vsize;
-    htvalue_t** buckets;
+    htvalue_t* buckets;
 } hashtable_t;
 
 htvalue_t* ht_get(hashtable_t* ht, void* key);
