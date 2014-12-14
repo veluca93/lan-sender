@@ -16,7 +16,7 @@ src/%.o: src/%.c ${HEADERS}
 	${GCC} -c ${INCLUDES} ${CFLAGS} $< -o $@
 
 sha224sum: src/hash.o src/sha224sum.o
-	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
+	${GCC} ${CFLAGS} ${LDFLAGS} $^ -o $@
 
 test_hashtable: src/test_hashtable.o src/hashtable.o
-	${GCC} ${CFLAGS} ${LDFLAGS} $? -o $@
+	${GCC} ${CFLAGS} ${LDFLAGS} $^ -o $@
