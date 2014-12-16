@@ -1,5 +1,5 @@
-#ifndef LC_HASH_H
-#define LC_HASH_H
+#ifndef LS_HASH_H
+#define LS_HASH_H
 #include <stdint.h>
 #include <stdlib.h>
 
