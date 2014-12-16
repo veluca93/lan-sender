@@ -29,5 +29,6 @@ int main() {
         assert(*(unsigned long long*) e->value == values[i]);
     }
 
+    ht_free(hashtable);
     return 0;
 }

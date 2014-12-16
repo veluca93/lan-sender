@@ -21,6 +21,12 @@ hashtable_t* ht_create(size_t ksize, size_t vsize) {
 }
 
 void ht_free(hashtable_t* ht) {
+    size_t i;
+    for (i=0; i<1<<ht->nbits; i++)
+        if (ht->buckets[i].key) {
+            free(ht->buckets[i].key);
+            free(ht->buckets[i].value);
+        }
     free(ht->buckets);
     free(ht);
 }
