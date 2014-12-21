@@ -11,13 +11,16 @@ int main() {
     log_warning("LOL");
     log_notice("asd");
     redraw();
+    char tmp2[1000] = {};
     for (size_t i=0; i<100; i++) {
         usleep(100000);
         char tmp[1000];
+        tmp2[i] = 'a';
         sprintf(tmp, "LOL %lu", i);
         log_warning(tmp);
         sprintf(tmp, "Status 0: %lu", i);
         update_status_msg(0, tmp);
+        log_notice(tmp2);
         redraw();
     }
 }

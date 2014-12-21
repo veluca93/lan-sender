@@ -44,9 +44,6 @@ void update_status_msg(size_t i, char* msg) {
 void log_warning(char* msg) {
     size_t i;
     pthread_mutex_lock(&ui_mutex);
-    for (i=0; i<warning_n; i++)
-        fprintf(stderr, "%x ", warnings[i]);
-    fprintf(stderr, "\n");
     free(warnings[warning_n-1]);
     for (i=warning_n-1; i>0; i--)
         warnings[i] = warnings[i-1];
