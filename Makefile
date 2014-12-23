@@ -1,6 +1,6 @@
 GCC=gcc
 INCLUDES=-Iheaders
-CFLAGS=-Os -g -std=c99 -Wall -flto -static
+CFLAGS=-Os -g -std=c99 -Wall -flto -static -D_GNU_SOURCE
 LDFLAGS=-Wl,--as-needed -Wl,-O1
 LIBS=-lpthread
 
