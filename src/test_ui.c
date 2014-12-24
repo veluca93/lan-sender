@@ -14,7 +14,7 @@ int main() {
     char tmp2[1000] = {};
     for (size_t i=0; i<100; i++) {
         usleep(100000);
-        char tmp[1000];
+        char tmp[1000] = {};
         tmp2[i] = 'a';
         sprintf(tmp, "LOL %lu", i);
         log_warning(tmp);

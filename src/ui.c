@@ -45,8 +45,9 @@ void log_warning(char* msg) {
     size_t i;
     pthread_mutex_lock(&ui_mutex);
     free(warnings[warning_n-1]);
-    for (i=warning_n-1; i>0; i--)
-        warnings[i] = warnings[i-1];
+    if (warning_n)
+        for (i=warning_n-1; i>0; i--)
+            warnings[i] = warnings[i-1];
     warnings[0] = mystrndup(msg, 80);
     pthread_mutex_unlock(&ui_mutex);
 }
@@ -55,8 +56,9 @@ void log_notice(char* msg) {
     pthread_mutex_lock(&ui_mutex);
     free(notices[notice_n-1]);
     size_t i;
-    for (i=notice_n-1; i>0; i--)
-        notices[i] = notices[i-1];
+    if (notice_n)
+        for (i=notice_n-1; i>0; i--)
+            notices[i] = notices[i-1];
     notices[0] = mystrndup(msg, 80);
     pthread_mutex_unlock(&ui_mutex);
 }

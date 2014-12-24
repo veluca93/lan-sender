@@ -21,10 +21,6 @@ static connected_handler* cnh;
 // Maximum number of connections
 static int fdmax;
 
-// Socket fd <---> peer number
-static int* peerno;
-static int* sfd;
-
 // Threads and thread's buffers array
 static pthread_t* threads;
 static char* t_used;
@@ -51,25 +47,27 @@ void read_or_write(int sock) {
             // Timeout, eg. nothing to read
             pthread_mutex_lock(buff_mutexes+sock);
             nbuffs[sock]--;
-            send_to_peer(peerno[sock], buffers[sock][nbuffs[sock]], buffsize[sock][nbuffs[sock]]);
+            send_to_peer(sock, buffers[sock][nbuffs[sock]], buffsize[sock][nbuffs[sock]]);
             free(buffers[sock][nbuffs[sock]]);
             pthread_mutex_unlock(buff_mutexes+sock);
         } else {
             // Something to read: read the message number, then call the appropriate handler.
             char msgno_;
-            LOG_IF_ERROR(recv(sock, &msgno_, 1, MSG_PEEK), "Read",);
+            int nr = recv(sock, &msgno_, 1, MSG_PEEK);
+            if (nr == 0) return;
+            LOG_IF_ERROR(nr, "Read",);
             int msgno = msgno_;
-            if (mh[msgno]) mh[msgno](peerno[sock], msgno);
-            else mh_default(peerno[sock], msgno);
+            if (mh[msgno]) mh[msgno](sock, msgno);
+            else mh_default(sock, msgno);
         }
     }
 }
 
 void* accepter(void* data) {
     int sock = (int) (size_t) data;
-    if (ah) ah(peerno[sock]);
+    if (ah) ah(sock);
     read_or_write(sock);
-    if (ch) ch(peerno[sock]);
+    if (ch) ch(sock);
     return NULL;
 }
 
@@ -77,18 +75,20 @@ void* listener(void* data) {
     int sock;
     LOG_IF_ERROR(listen(srvsocket, 5), "Failed to listen", NULL);
     while (1) {
+        log_notice("Listening...");
         LOG_IF_ERROR(sock = accept(srvsocket, NULL, NULL), "Accept failed", NULL);
         t_used[sock] = 1;
         pthread_create(threads+sock, NULL, &accepter, (void*) (size_t) sock);
     }
+    log_notice("Stopped listening!");
     return NULL;
 }
 
 void* connecter(void* data) {
     int sock = (int) (size_t) data;
-    if (cnh[sock]) cnh[sock](peerno[sock]);
+    if (cnh[sock]) cnh[sock](sock);
     read_or_write(sock);
-    if (ch) ch(peerno[sock]);
+    if (ch) ch(sock);
     close(sock);
     return NULL;
 }
@@ -105,8 +105,6 @@ void communication_init(const char* host, const char* port) {
     struct rlimit fdno;
     getrlimit(RLIMIT_NOFILE, &fdno);
     fdmax = fdno.rlim_cur;
-    peerno = calloc(fdmax, sizeof* peerno);
-    sfd = calloc(fdmax, sizeof* sfd);
     threads = calloc(fdmax, sizeof* threads);
     t_used = calloc(fdmax, sizeof* t_used);
     cnh = calloc(fdmax, sizeof* cnh);
@@ -169,8 +167,8 @@ void register_close_handler(close_handler hdl) {
 int send_to_peer(int peerno, const void* buf_, size_t len) {
     const char* buf = buf_;
     while (len > 0) {
-        int ret = send(sfd[peerno], buf, len, 0);
-        if (ret < 1 && errno != EINTR) return 0;
+        int ret = send(peerno, buf, len, 0);
+        if (ret < 1 && errno != EINTR) return -1;
         len -= ret;
         buf += ret;
     }
@@ -180,16 +178,15 @@ int send_to_peer(int peerno, const void* buf_, size_t len) {
 int read_from_peer(int peerno, void* buf_, size_t len) {
     char* buf = buf_;
     while (len > 0) {
-        int ret = recv(sfd[peerno], buf, len, 0);
-        if (ret < 1 && errno != EINTR) return 0;
+        int ret = recv(peerno, buf, len, 0);
+        if (ret < 1 && errno != EINTR) return -1;
         len -= ret;
         buf += ret;
     }
     return 1;
 }
 
-void sendlater(int peerno, void* msg, size_t size) {
-    int sock = sfd[peerno];
+void sendlater(int sock, void* msg, size_t size) {
     pthread_mutex_lock(buff_mutexes+sock);
     buffers[sock][nbuffs[sock]] = memcpy(malloc(size), msg, size);
     buffsize[sock][nbuffs[sock]] = size;
