@@ -7,6 +7,9 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 // Handlers
 static accept_handler ah;
@@ -24,6 +27,7 @@ static int* sfd;
 
 // Threads and thread's buffers array
 static pthread_t* threads;
+static char* t_used;
 static void* (*buffers)[64];
 static size_t (*buffsize)[64];
 static int* nbuffs;
@@ -43,6 +47,7 @@ void read_or_write(int sock) {
         int ret;
         LOG_IF_ERROR(ret = select(FD_SETSIZE, &fd, NULL, NULL, &timeout), "Select",);
         if (ret == 0) {
+            if (nbuffs[sock] == 0) continue;
             // Timeout, eg. nothing to read
             pthread_mutex_lock(buff_mutexes+sock);
             nbuffs[sock]--;
@@ -62,9 +67,9 @@ void read_or_write(int sock) {
 
 void* accepter(void* data) {
     int sock = (int) (size_t) data;
-    ah(peerno[sock]);
+    if (ah) ah(peerno[sock]);
     read_or_write(sock);
-    ch(peerno[sock]);
+    if (ch) ch(peerno[sock]);
     return NULL;
 }
 
@@ -73,6 +78,7 @@ void* listener(void* data) {
     LOG_IF_ERROR(listen(srvsocket, 5), "Failed to listen", NULL);
     while (1) {
         LOG_IF_ERROR(sock = accept(srvsocket, NULL, NULL), "Accept failed", NULL);
+        t_used[sock] = 1;
         pthread_create(threads+sock, NULL, &accepter, (void*) (size_t) sock);
     }
     return NULL;
@@ -80,26 +86,29 @@ void* listener(void* data) {
 
 void* connecter(void* data) {
     int sock = (int) (size_t) data;
-    cnh[sock](peerno[sock]);
+    if (cnh[sock]) cnh[sock](peerno[sock]);
     read_or_write(sock);
-    ch(peerno[sock]);
+    if (ch) ch(peerno[sock]);
     close(sock);
     return NULL;
 }
 
 void communication_end() {
     size_t i;
-    for (i=0; i<fdmax; i++) pthread_join(threads[i], NULL);
     close(srvsocket);
+    for (i=0; i<fdmax; i++)
+        if (t_used[i])
+            pthread_join(threads[i], NULL);
 }
 
-void communication_init(const struct sockaddr* addr, socklen_t addrlen) {
+void communication_init(const char* host, const char* port) {
     struct rlimit fdno;
     getrlimit(RLIMIT_NOFILE, &fdno);
     fdmax = fdno.rlim_cur;
     peerno = calloc(fdmax, sizeof* peerno);
     sfd = calloc(fdmax, sizeof* sfd);
     threads = calloc(fdmax, sizeof* threads);
+    t_used = calloc(fdmax, sizeof* t_used);
     cnh = calloc(fdmax, sizeof* cnh);
     buffers = calloc(fdmax, sizeof* buffers);
     buffsize = calloc(fdmax, sizeof* buffsize);
@@ -109,18 +118,37 @@ void communication_init(const struct sockaddr* addr, socklen_t addrlen) {
     for (i=0; i<fdmax; i++)
         pthread_mutex_init(buff_mutexes + i, NULL);
     PRINT_IF_ERROR(srvsocket = socket(AF_INET, SOCK_STREAM, 0), "Can't create server socket", 2);
-    PRINT_IF_ERROR(bind(srvsocket, addr, addrlen), "Can't bind server socket", 2);
+    struct sockaddr_in in_addr = {};
+    in_addr.sin_family = AF_INET;
+    in_addr.sin_port = htons(atoi(port));
+    if (!inet_pton(AF_INET, host, &in_addr.sin_addr)) {
+        fprintf(stderr, "Invalid ip address specified!\n");
+        exit(3);
+    }
+    struct sockaddr* addr = (struct sockaddr*) &in_addr;
+    // Set SO_REUSEADDR to debug better.
+    int one = 1;
+    setsockopt(srvsocket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one);
+    PRINT_IF_ERROR(bind(srvsocket, addr, sizeof in_addr), "Can't bind server socket", 2);
     atexit(&communication_end);
 }
 
 void communication_start() {
+    t_used[srvsocket] = 1;
     pthread_create(threads+srvsocket, NULL, &listener, NULL);
 }
 
-void communication_connect(connected_handler hdl, const struct sockaddr* addr, socklen_t addrlen) {
+void communication_connect(connected_handler hdl, const char* host, const char* port) {
     int sock;
     LOG_IF_ERROR(sock = socket(AF_INET, SOCK_STREAM, 0), "Can't create client socket",);
-    LOG_IF_ERROR(bind(sock, addr, addrlen), "Can't bind client socket",);
+    struct sockaddr_in in_addr = {};
+    in_addr.sin_family = AF_INET;
+    in_addr.sin_port = htons(atoi(port));
+    if (!inet_pton(AF_INET, host, &in_addr.sin_addr)) {
+        log_warning("Invalid ip address specified!");
+    }
+    struct sockaddr* addr = (struct sockaddr*) &in_addr;
+    LOG_IF_ERROR(bind(sock, addr, sizeof in_addr), "Can't bind client socket",);
     cnh[sock] = hdl;
     pthread_create(threads+sock, NULL, &connecter, (void*) (size_t) sock);
 }

@@ -8,9 +8,9 @@ typedef void (*connected_handler)(int peerno);
 typedef void (*msg_handler)(int peerno, int msg);
 typedef void (*close_handler)(int perno);
 
-void communication_init(const struct sockaddr* addr, socklen_t addrlen);
+void communication_init(const char* host, const char* port);
 void communication_start();
-void communication_connect(connected_handler hdl, const struct sockaddr* addr, socklen_t addrlen);
+void communication_connect(connected_handler hdl, const char* host, const char* port);
 void register_accept_handler(accept_handler hdl);
 void register_msg_handler(int msg, msg_handler hdl);
 void register_close_handler(close_handler hdl);
