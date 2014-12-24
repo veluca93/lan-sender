@@ -24,3 +24,6 @@ test_hashtable: src/test_hashtable.o src/hashtable.o
 
 test_ui: src/test_ui.o src/ui.o
 	${GCC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LIBS}
+
+test_communication: src/test_communication.o src/communication.o src/ui.o
+	${GCC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LIBS}
